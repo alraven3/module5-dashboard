@@ -3,18 +3,46 @@ import * as d3 from "d3";
 import { useDimensions } from "./use-dimensions";
 import { data } from "../energy";
 
-export const ResponsiveTreemap = (props) => {
+export const ResponsiveTreemap = ({title, ...props}) => {
   const chartRef = useRef(null);
   const chartSize = useDimensions(chartRef);
   return (
-    <div ref={chartRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-      <Treemap
-        height={chartSize.height}
-        width={chartSize.width}
-        data={data}
-        {...props}
-      />
-    </div>
+    // <div ref={chartRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+    //   <Treemap
+    //     height={chartSize.height}
+    //     width={chartSize.width}
+    //     data={data}
+    //     {...props}
+    //   />
+    // </div>
+      <div ref={chartRef} style={{ 
+        width: '100%', 
+        height: '100%', 
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column' // Important : empile le titre et le graphe
+      }}> 
+      {title && (
+          <h3 style={{ 
+            margin: '0 0 0 0', 
+            fontSize: '1rem', 
+            fontWeight: 'bold', 
+            textAlign: 'center',
+            color: '#333',
+            flexShrink: 0 // Empêche le titre de s'écraser
+          }}>
+            {title}
+          </h3>
+        )}
+      <div ref={chartRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%', overflow: 'hidden'  }}> 
+        <Treemap
+          height={chartSize.height- (title ? 20 : 0)} // On soustrait la hauteur approx du titre
+          width={chartSize.width}
+          data={data}
+          {...props} // pass all the props
+        />
+      </div>    
+      </div>
   );
 };
 
@@ -94,7 +122,7 @@ const Treemap = ({ width, height, data }) => {
 
   return (
     <svg width={width} height={height}>
-      <text
+      {/* <text
         x={width / 2}
         y={MARGIN.top / 2}
         textAnchor="middle"
@@ -102,7 +130,7 @@ const Treemap = ({ width, height, data }) => {
         fontWeight="bold"
       >
         World Energy Mix (2024)
-      </text>
+      </text> */}
       <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
         {leaves}
       </g>

@@ -3,17 +3,57 @@ import * as d3 from "d3";
 import { useDimensions } from "./use-dimensions";
 import { data } from "../energy";
 
-export const ResponsiveLineChart = ({ style, ...props }) => {
+export const ResponsiveLineChart = ({ style, title, subtitle, ...props }) => {
   const chartRef = useRef(null);
   const chartSize = useDimensions(chartRef);
   return (
-    <div ref={chartRef} style={{ width: '100%', height: '100%', overflow: 'hidden', ...style }}><h2></h2>
+    // <div ref={chartRef} style={{ width: '100%', height: '100%', overflow: 'hidden', ...style }}><h2></h2>
+    //   <LineChart
+    //     height={chartSize.height}
+    //     width={chartSize.width}
+    //     data={data}
+    //     {...props}
+    //   />
+    // </div>
+    <div ref={chartRef} style={{ 
+      width: '100%', 
+      height: '100%', 
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column' // Important : empile le titre et le graphe
+    }}> 
+    {title && (
+        <h3 style={{ 
+          margin: '0 0 0 0', 
+          fontSize: '1rem', 
+          fontWeight: 'bold', 
+          textAlign: 'center',
+          color: '#333',
+          flexShrink: 0 // Empêche le titre de s'écraser
+        }}>
+          {title}
+        </h3>
+      )}
+    {subtitle && (
+        <h3 style={{ 
+          margin: '0 0 0 0', 
+          fontSize: '1rem', 
+          fontWeight: 'normal', 
+          textAlign: 'center',
+          color: '#333',
+          flexShrink: 0 // Empêche le titre de s'écraser
+        }}>
+          {subtitle}
+        </h3>
+      )}
+    <div ref={chartRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%', overflow: 'hidden'  }}> 
       <LineChart
-        height={chartSize.height}
+        height={chartSize.height- (title ? 20 : 0)} // On soustrait la hauteur approx du titre
         width={chartSize.width}
         data={data}
-        {...props}
+        {...props} // pass all the props
       />
+    </div>    
     </div>
   );
 };
@@ -117,7 +157,7 @@ const LineChart = ({ width, height, data }) => {
 
   return (
     <svg width={width} height={height}>
-      <text
+      {/* <text
         x={width / 2}
         y={MARGIN.top / 2}
         textAnchor="middle"
@@ -133,7 +173,7 @@ const LineChart = ({ width, height, data }) => {
         fontSize={14}
       >
         Despite Some Progress, Renewables Remain Far Behind Fossil Fuels
-      </text>
+      </text> */}
       <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
         {xTicks}
         {yTicks}

@@ -3,20 +3,48 @@ import * as d3 from "d3";
 import { useDimensions} from "./use-dimensions";
 import { data } from "../energy";
 // Responsive component = wrapper that manages the dimensions and does nothing else
-export const ResponsiveBarplot = ({props}) => { 
+export const ResponsiveBarplot = ({title, ...props}) => { 
   const chartRef = useRef(null);
 
   const chartSize = useDimensions(chartRef);
 
   return (
     // it's necessary to add "overflow: 'hidden'" because it stops the SVG from inflating the container and avoids feedback loops based on the che container's children, which was my issue at first
-    <div ref={chartRef} style={{ width: '100%', height: '100%', overflow: 'hidden'  }}> 
+    // <div ref={chartRef} style={{ width: '100%', height: '100%', overflow: 'hidden'  }}> 
+    //   <Barplot
+    //     height={chartSize.height}
+    //     width={chartSize.width}
+    //     data={data}
+    //     {...props} // pass all the props
+    //   />
+    // </div>
+    <div ref={chartRef} style={{ 
+      width: '100%', 
+      height: '100%', 
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column' // Important : empile le titre et le graphe
+    }}> 
+    {title && (
+        <h3 style={{ 
+          margin: '0 0 0 0', 
+          fontSize: '1rem', 
+          fontWeight: 'bold', 
+          textAlign: 'center',
+          color: '#333',
+          flexShrink: 0 // Empêche le titre de s'écraser
+        }}>
+          {title}
+        </h3>
+      )}
+    <div ref={chartRef} style={{ flex: 1, position: 'relative', width: '100%', height: '100%', overflow: 'hidden'  }}> 
       <Barplot
-        height={chartSize.height}
+        height={chartSize.height- (title ? 20 : 0)} // On soustrait la hauteur approx du titre
         width={chartSize.width}
         data={data}
         {...props} // pass all the props
       />
+    </div>    
     </div>
   );
 };
@@ -110,7 +138,8 @@ const Barplot = ({ width, height, data }) => {
     ));
 return (
     <svg width={width} height={height}>
-        <text
+
+        {/* <text
             x={width / 2}
             y={MARGIN.top / 2}
             textAnchor="middle"
@@ -118,7 +147,7 @@ return (
             fontWeight="bold"
         >
             Top 5 Countries by Total Energy Consumption (2024)
-        </text>
+        </text> */}
         <g
         width={boundsWidth}
         height={boundsHeight}

@@ -18,6 +18,10 @@ body{
     gap: 10px;
     margin-top: 10px;
 }
+/* Ajoutez cette règle pour forcer le 3ème élément (le LineChart) à prendre toute la largeur */
+.dashboard-content > :nth-child(3) {
+    grid-column: 1 / 3;
+}
 .footer{
     margin-left: 40px;
 }
