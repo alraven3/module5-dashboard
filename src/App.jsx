@@ -14,7 +14,7 @@ function App() {
       <div className='dashboard-content'>
         <ResponsiveBarplot title={"Top 5 Countries by Energy Consumption (2024)"}/>
         <ResponsiveTreemap title={"World Energy Mix (2024)"} />
-        <ResponsiveLineChart style={{gridColumn: '1 / 3'}} 
+        <ResponsiveLineChart 
           title={"The Global Evolution of Energy Consumption (1965-2024)"} 
           subtitle={"Despite Some Progress, Renewables Remain Far Behind Fossil Fuels"} />
       </div>
