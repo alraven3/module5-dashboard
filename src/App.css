@@ -71,7 +71,7 @@ body {
   fill: #333;
 }
 
-/* Quand une barre est survolée, son texte frère immédiat (+) devient gras et rose */
+/* Quand une barre est survolée, son texte frère immédiat (+) devient gras 
 .container .bar:hover + text {
   font-weight: bold;
 }
