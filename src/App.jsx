@@ -2,9 +2,10 @@ import './App.css'
 import { ResponsiveBarplot } from './components/barchart'
 import { ResponsiveTreemap } from './components/treemap'
 import { ResponsiveLineChart } from './components/linechart'
+import { useState } from 'react'
 
 function App() {
-
+  const [hoveredSource, setHoveredSource] = useState(null);
   return (
     <div className='dashboard'>
       <header className='dashboard-header'>
@@ -13,10 +14,16 @@ function App() {
       </header>
       <div className='dashboard-content'>
         <ResponsiveBarplot title={"Top 5 Countries by Energy Consumption (2024)"}/>
-        <ResponsiveTreemap title={"World Energy Mix (2024)"} />
+        <ResponsiveTreemap title={"World Energy Mix (2024)"} 
+          hoveredSource={hoveredSource}
+          setHoveredSource={setHoveredSource}
+        />
         <ResponsiveLineChart 
           title={"The Global Evolution of Energy Consumption (1965-2024)"} 
-          subtitle={"Despite Some Progress, Renewables Remain Far Behind Fossil Fuels"} />
+          subtitle={"Despite Some Progress, Renewables Remain Far Behind Fossil Fuels"} 
+          hoveredSource={hoveredSource}
+          setHoveredSource={setHoveredSource}
+          />
       </div>
       <p className='footer'>Source: Our World in Data</p>
     </div>
