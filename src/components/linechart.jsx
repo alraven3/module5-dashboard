@@ -13,7 +13,8 @@ export const ResponsiveLineChart = ({ title, subtitle, hoveredSource, setHovered
       height: '100%', 
       overflow: 'hidden',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      position: 'relative' // Important pour le positionnement absolu du tooltip
     }}> 
       {title && (
         <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', fontWeight: 'bold', textAlign: 'center', color: '#333', flexShrink: 0 }}>{title}</h3>
@@ -48,6 +49,7 @@ const FOSSIL_COLORS = {
 const RENEWABLE_COLOR = '#22c55e';
 
 const LineChart = ({ width, height, data, hoveredSource, setHoveredSource }) => {
+  const svgRef = useRef(null); // Ref pour le SVG lui-même
   const boundsWidth = width - MARGIN.left - MARGIN.right;
   const boundsHeight = height - MARGIN.top - MARGIN.bottom;
 
@@ -80,38 +82,23 @@ const LineChart = ({ width, height, data, hoveredSource, setHoveredSource }) => 
   const buildLine = (key) => d3.line().x(d => xScale(d.year)).y(d => yScale(d[key]));
   const lastPoint = lineData[lineData.length - 1];
 
-  // Fonction robuste pour trouver l'année la plus proche
   const findNearestData = (mouseX) => {
-    // 1. Convertir la position souris en année
     const yearAtMouse = xScale.invert(mouseX);
-    
-    // 2. Utiliser bisector pour trouver l'index d'insertion
     const bisector = d3.bisector(d => d.year).left;
     const index = bisector(lineData, yearAtMouse);
     
-    // 3. Comparer l'année précédente et suivante pour trouver la plus proche
     const d0 = lineData[index - 1];
     const d1 = lineData[index];
     
-    // Si on est avant la première donnée
     if (!d0) return d1;
-    // Si on est après la dernière donnée
     if (!d1) return d0;
     
-    // Retourner celle qui est la plus proche mathématiquement
     return (yearAtMouse - d0.year < d1.year - yearAtMouse) ? d0 : d1;
   };
 
-  // Gestion du survol local (Linechart -> Tooltip)
-  // L'argument 'event' est l'événement React natif
   const handleLineHover = (sourceKey, label, color, event) => {
-    // CORRECTION ICI : d3.pointer utilise les coordonnées relatives à la cible de l'événement (le path SVG)
-    // Cela évite les problèmes de marges CSS et de positionnement absolu
-    const [mouseX, mouseY] = d3.pointer(event);
-    
-    // On s'assure que mouseX est bien dans les bornes du graphique (0 à boundsWidth)
-    // (d3.pointer le fait déjà relatif au SVG, mais on vérifie la logique)
-    
+    // On utilise toujours d3.pointer pour la précision
+    const [mouseX] = d3.pointer(event);
     const nearestData = findNearestData(mouseX);
 
     if (nearestData) {
@@ -119,7 +106,15 @@ const LineChart = ({ width, height, data, hoveredSource, setHoveredSource }) => 
       const y = yScale(nearestData[sourceKey]);
       const value = nearestData[sourceKey];
       
-      setActiveTooltip({ x, y, year: nearestData.year, value, label, color });
+      // On stocke les coordonnées pour le tooltip HTML
+      setActiveTooltip({ 
+        x, 
+        y, 
+        year: nearestData.year, 
+        value, 
+        label, 
+        color 
+      });
     }
   };
 
@@ -143,115 +138,151 @@ const LineChart = ({ width, height, data, hoveredSource, setHoveredSource }) => 
     return 1;
   };
 
-  const fossilLines = FOSSIL_SOURCES.map(source => {
-    const opacity = getOpacity(source);
-    const color = FOSSIL_COLORS[source];
-    const label = source.charAt(0).toUpperCase() + source.slice(1);
-
+  const renderLineGroup = (sourceKey, label, color, strokeWidth = 2) => {
+    const opacity = getOpacity(sourceKey);
+    
     return (
-      <g key={source} style={{ opacity, transition: "opacity 200ms" }}>
+      <g key={sourceKey} style={{ opacity, transition: "opacity 200ms" }}>
+        {/* Zone de détection invisible (large) */}
         <path
-          d={buildLine(source)(lineData)}
+          d={buildLine(sourceKey)(lineData)}
           fill="none"
-          stroke={color}
-          strokeWidth={2}
-          onMouseMove={(e) => handleLineHover(source, label, color, e)}
+          stroke="transparent"
+          strokeWidth={Math.max(strokeWidth + 15, 20)}
+          onMouseMove={(e) => handleLineHover(sourceKey, label, color, e)}
           onMouseLeave={handleMouseLeave}
           style={{ cursor: 'pointer' }}
         />
+        
+        {/* Ligne visible */}
+        <path
+          d={buildLine(sourceKey)(lineData)}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          pointerEvents="none"
+        />
+        
+        {/* Label */}
         <text
           x={boundsWidth + 5}
-          y={yScale(lastPoint[source])}
+          y={yScale(lastPoint[sourceKey])}
           alignmentBaseline="central"
           fontSize={11}
           fill={color}
           opacity={opacity > 0.5 ? 1 : 0.5}
+          pointerEvents="none"
         >
           {label}
         </text>
       </g>
     );
+  };
+
+  const fossilLines = FOSSIL_SOURCES.map(source => {
+    const label = source.charAt(0).toUpperCase() + source.slice(1);
+    return renderLineGroup(source, label, FOSSIL_COLORS[source], 2);
   });
 
   const renewablesOpacity = getOpacity('renewables');
   const renewablesLabel = "Renewables";
 
   return (
-    <svg width={width} height={height}>
-      <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
-        {/* Axes et Grilles */}
-        {xScale.ticks(6).map((value, i) => (
-          <g key={i} transform={`translate(${xScale(value)}, 0)`}>
-            <line y1={0} y2={boundsHeight} stroke="#808080" opacity={0.2} />
-            <text y={boundsHeight + 20} textAnchor="middle" fontSize={11} fill="#808080">{value}</text>
-          </g>
-        ))}
-        {yScale.ticks(5).map((value, i) => (
-          <g key={i} transform={`translate(0, ${yScale(value)})`}>
-            <line x1={0} x2={boundsWidth} stroke="#808080" opacity={0.2} />
-            <text x={-8} textAnchor="end" alignmentBaseline="central" fontSize={11} fill="#808080">{value}</text>
-          </g>
-        ))}
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <svg ref={svgRef} width={width} height={height} style={{ display: 'block' }}>
+        <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
+          {/* Axes et Grilles */}
+          {xScale.ticks(6).map((value, i) => (
+            <g key={i} transform={`translate(${xScale(value)}, 0)`}>
+              <line y1={0} y2={boundsHeight} stroke="#808080" opacity={0.2} />
+              <text y={boundsHeight + 20} textAnchor="middle" fontSize={11} fill="#808080">{value}</text>
+            </g>
+          ))}
+          {yScale.ticks(5).map((value, i) => (
+            <g key={i} transform={`translate(0, ${yScale(value)})`}>
+              <line x1={0} x2={boundsWidth} stroke="#808080" opacity={0.2} />
+              <text x={-8} textAnchor="end" alignmentBaseline="central" fontSize={11} fill="#808080">{value}</text>
+            </g>
+          ))}
 
-        {/* Lignes Fossiles */}
-        {fossilLines}
+          {/* Lignes Fossiles */}
+          {fossilLines}
 
-        {/* Ligne Renouvelables */}
-        <g style={{ opacity: renewablesOpacity, transition: "opacity 200ms" }}>
-          <path
-            d={buildLine('renewables')(lineData)}
-            fill="none"
-            stroke={RENEWABLE_COLOR}
-            strokeWidth={5}
-            onMouseMove={(e) => handleLineHover('renewables', renewablesLabel, RENEWABLE_COLOR, e)}
-            onMouseLeave={handleMouseLeave}
-            style={{ cursor: 'pointer' }}
-          />
-          <text
-            x={boundsWidth + 5}
-            y={yScale(lastPoint.renewables)}
-            alignmentBaseline="central"
-            fontSize={11}
-            fontWeight="bold"
-            fill={RENEWABLE_COLOR}
-            opacity={renewablesOpacity > 0.5 ? 1 : 0.5}
-          >
-            {renewablesLabel}
-          </text>
-        </g>
-
-        {/* Rendu du Tooltip (si actif) */}
-        {activeTooltip && (
-          <g transform={`translate(${activeTooltip.x}, ${activeTooltip.y})`}>
-            {/* Cercle sur le point */}
-            <circle r={6} fill={activeTooltip.color} stroke="#fff" strokeWidth={2} />
-            
-            {/* Boîte de texte */}
-            <rect 
-              x={10} 
-              y={-25} 
-              width={140} 
-              height={57} 
-              rx={4} 
-              fill="rgba(255, 255, 255, 0.95)" 
-              stroke="#ddd" 
-              strokeWidth={1}
-              filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.1))"
+          {/* Ligne Renouvelables */}
+          <g style={{ opacity: renewablesOpacity, transition: "opacity 200ms" }}>
+            <path
+              d={buildLine('renewables')(lineData)}
+              fill="none"
+              stroke="transparent"
+              strokeWidth={35}
+              onMouseMove={(e) => handleLineHover('renewables', renewablesLabel, RENEWABLE_COLOR, e)}
+              onMouseLeave={handleMouseLeave}
+              style={{ cursor: 'pointer' }}
             />
-            
-            {/* Texte du Tooltip */}
-            <text x={18} y={-5} fontSize={12} fontWeight="bold" fill="#333">
-              {activeTooltip.label}
-            </text>
-            <text x={18} y={12} fontSize={11} fill="#555">
-              Year: {activeTooltip.year}
-            </text>
-            <text x={18} y={26} fontSize={11} fontWeight="bold" fill={activeTooltip.color}>
-              Value: {Math.round(activeTooltip.value)} TWh
+            <path
+              d={buildLine('renewables')(lineData)}
+              fill="none"
+              stroke={RENEWABLE_COLOR}
+              strokeWidth={5}
+              pointerEvents="none"
+            />
+            <text
+              x={boundsWidth + 5}
+              y={yScale(lastPoint.renewables)}
+              alignmentBaseline="central"
+              fontSize={11}
+              fontWeight="bold"
+              fill={RENEWABLE_COLOR}
+              opacity={renewablesOpacity > 0.5 ? 1 : 0.5}
+              pointerEvents="none"
+            >
+              {renewablesLabel}
             </text>
           </g>
-        )}
-      </g>
-    </svg>
+          
+          {/* Cercle de pointage (optionnel, reste dans le SVG pour être sûr qu'il soit sous le tooltip HTML) */}
+          {activeTooltip && (
+             <circle 
+                cx={activeTooltip.x} 
+                cy={activeTooltip.y} 
+                r={6} 
+                fill={activeTooltip.color} 
+                stroke="#fff" 
+                strokeWidth={2} 
+                pointerEvents="none"
+             />
+          )}
+        </g>
+      </svg>
+
+      {/* Tooltip HTML ABSOLU (Hors du SVG) */}
+      {activeTooltip && (
+        <div
+          style={{
+            position: 'absolute',
+            left: MARGIN.left + activeTooltip.x + 10, // Décalage par rapport au conteneur
+            top: MARGIN.top + activeTooltip.y - 25,
+            width: '140px',
+            padding: '8px',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            boxShadow: '0px 2px 4px rgba(0,0,0,0.1)',
+            pointerEvents: 'none', // CRUCIAL : La souris traverse le tooltip pour rester sur la ligne
+            zIndex: 1000,
+            fontSize: '11px',
+            color: '#333'
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '4px', color: activeTooltip.color }}>
+            {activeTooltip.label}
+          </div>
+          <div style={{ color: '#555' }}>Year: {activeTooltip.year}</div>
+          <div style={{ fontWeight: 'bold', color: activeTooltip.color }}>
+            Value: {Math.round(activeTooltip.value)} TWh
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
