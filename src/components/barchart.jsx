@@ -53,7 +53,7 @@ export const ResponsiveBarplot = ({ title, ...props }) => {
   );
 };
 
-const MARGIN = { top: 30, right: 30, bottom: 30, left: 50 };
+const MARGIN = { top: 10, right: 30, bottom: 30, left: 50 };
 const BAR_PADDING = 0.3;
 
 // Non responsive component
@@ -107,7 +107,7 @@ const Barplot = ({ width, height, data }) => {
           y={y + yScale.bandwidth() / 2}
           textAnchor="start"
           alignmentBaseline="middle"
-          fontSize={12}
+          fontSize={13}
           fill="#333"
           style={{ pointerEvents: "none" }}
         >
@@ -135,7 +135,7 @@ const Barplot = ({ width, height, data }) => {
           y={boundsHeight + 15}
           textAnchor="middle"
           alignmentBaseline="hanging"
-          fontSize={10}
+          fontSize={11}
           fill="#808080"
         >
           {value}
