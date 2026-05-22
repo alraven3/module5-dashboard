@@ -12,9 +12,11 @@ function App() {
         <h1>Global Energy Dashboard</h1>
         <p>All energy values are in TWh (terawatt-hours)</p>
       </header>
-      <div className='dashboard-content'>
+      <div className='barchart-container'> 
         <ResponsiveBarplot title={"Top 5 Countries by Energy Consumption (2024)"}/>
-        <ResponsiveTreemap title={"World Energy Mix (2024)"} 
+      </div>
+      <div className='treemap-linechart-container'>
+                <ResponsiveTreemap title={"World Energy Mix (2024)"} 
           hoveredSource={hoveredSource}
           setHoveredSource={setHoveredSource}
         />
